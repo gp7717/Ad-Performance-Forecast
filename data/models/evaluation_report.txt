@@ -1,0 +1,31 @@
+
+# Model Evaluation Report
+
+## Overall Performance
+- **MAE**: 97.0813
+- **RMSE**: 126.3577
+- **R²**: 0.1487
+- **MAPE**: 9473317496888829952.00%
+
+## Residual Analysis
+- **Mean Residual**: -4.4651
+- **Residual Std**: 126.3371
+- **Residual Skewness**: 1.5069
+- **Residual Kurtosis**: 4.2648
+
+## Dataset Info
+- **Number of Samples**: 1083
+- **Mean Target Value**: 131.9213
+- **Target Std Dev**: 137.0129
+
+## Top 10 Most Important Features
+ 1. spend_expanding_sum            281.000000
+ 2. spend_mean                     264.000000
+ 3. impressions_expanding_sum      246.000000
+ 4. spend_rolling_std_7d           228.000000
+ 5. hour_cos                       196.000000
+ 6. day_of_month                   172.000000
+ 7. clicks_expanding_sum           161.000000
+ 8. spend_rolling_mean_7d          145.000000
+ 9. ctr_rolling_std_7d             143.000000
+10. hour                           142.000000
