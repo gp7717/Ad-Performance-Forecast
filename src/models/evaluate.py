@@ -19,6 +19,37 @@ from config import config
 warnings.filterwarnings('ignore')
 
 
+def symmetric_mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Calculate sMAPE (symmetric MAPE) - better for zero-inflated data"""
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    # Avoid division by zero
+    denominator = (np.abs(y_true) + np.abs(y_pred)) / 2
+    denominator = np.where(denominator == 0, np.inf, denominator)
+
+    smape = np.mean(np.abs(y_pred - y_true) / denominator) * 100
+    return smape
+
+
+def weighted_mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray, weights: np.ndarray = None) -> float:
+    """Calculate wMAPE (weighted MAPE) - better for zero-inflated data"""
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    if weights is None:
+        # Weight by actual values (higher weight for higher spend campaigns)
+        weights = np.abs(y_true)
+        weights = weights / np.sum(weights)
+
+    # Avoid division by zero
+    denominator = np.abs(y_true)
+    denominator = np.where(denominator == 0, 1e-6, denominator)
+
+    wmape = np.sum(weights * np.abs(y_pred - y_true) / denominator) * 100
+    return wmape
+
+
 class ModelEvaluator:
     """Comprehensive model evaluation and analysis."""
 
@@ -54,13 +85,29 @@ class ModelEvaluator:
         # Predictions
         y_pred = self.model.predict(X_test)
 
-        # Basic metrics
+        # Basic metrics (avoid MAPE due to zeros)
         metrics = {
             'mae': mean_absolute_error(y_test, y_pred),
             'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
             'r2': r2_score(y_test, y_pred),
-            'mape': mean_absolute_percentage_error(y_test, y_pred) * 100,
+            # 'mape': mean_absolute_percentage_error(y_test, y_pred) * 100,  # Removed - explodes on zeros
         }
+
+        # Add better metrics for zero-inflated data
+        metrics.update({
+            'smape': symmetric_mean_absolute_percentage_error(y_test, y_pred),
+            'wmape': weighted_mean_absolute_percentage_error(y_test, y_pred),
+        })
+
+        # Add zero-inflation statistics
+        zero_actuals = (y_test == 0).sum()
+        zero_predictions = (y_pred == 0).sum()
+        metrics.update({
+            'zero_actuals': int(zero_actuals),
+            'zero_predictions': int(zero_predictions),
+            'zero_actuals_pct': float(zero_actuals / len(y_test) * 100),
+            'zero_predictions_pct': float(zero_predictions / len(y_pred) * 100),
+        })
 
         # Training metrics if available
         if X_train is not None and y_train is not None:
@@ -69,7 +116,23 @@ class ModelEvaluator:
                 'train_mae': mean_absolute_error(y_train, y_train_pred),
                 'train_rmse': np.sqrt(mean_squared_error(y_train, y_train_pred)),
                 'train_r2': r2_score(y_train, y_train_pred),
-                'train_mape': mean_absolute_percentage_error(y_train, y_train_pred) * 100,
+                # 'train_mape': mean_absolute_percentage_error(y_train, y_train_pred) * 100,  # Removed - explodes on zeros
+            })
+
+            # Add better training metrics for zero-inflated data
+            metrics.update({
+                'train_smape': symmetric_mean_absolute_percentage_error(y_train, y_train_pred),
+                'train_wmape': weighted_mean_absolute_percentage_error(y_train, y_train_pred),
+            })
+
+            # Add training zero-inflation statistics
+            train_zero_actuals = (y_train == 0).sum()
+            train_zero_predictions = (y_train_pred == 0).sum()
+            metrics.update({
+                'train_zero_actuals': int(train_zero_actuals),
+                'train_zero_predictions': int(train_zero_predictions),
+                'train_zero_actuals_pct': float(train_zero_actuals / len(y_train) * 100),
+                'train_zero_predictions_pct': float(train_zero_predictions / len(y_train_pred) * 100),
             })
 
         # Additional metrics
@@ -252,7 +315,13 @@ class ModelEvaluator:
 - **MAE**: {metrics['mae']:.4f}
 - **RMSE**: {metrics['rmse']:.4f}
 - **R²**: {metrics['r2']:.4f}
-- **MAPE**: {metrics['mape']:.2f}%
+- **sMAPE**: {metrics['smape']:.2f}%
+- **wMAPE**: {metrics['wmape']:.2f}%
+
+## Zero-Inflation Analysis
+- **Zero Actuals**: {metrics['zero_actuals']} ({metrics['zero_actuals_pct']:.1f}%)
+- **Zero Predictions**: {metrics['zero_predictions']} ({metrics['zero_predictions_pct']:.1f}%)
+- **Model Bias**: {'Under-predicting zeros' if metrics['zero_actuals'] > metrics['zero_predictions'] else 'Over-predicting zeros' if metrics['zero_predictions'] > metrics['zero_actuals'] else 'Balanced'}
 
 ## Residual Analysis
 - **Mean Residual**: {residuals['mean_residual']:.4f}

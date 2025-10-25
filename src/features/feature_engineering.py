@@ -123,6 +123,30 @@ class FeatureEngineer:
         df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
         df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
 
+        # Add forecast horizon feature (12 hours for this model)
+        df['forecast_horizon'] = 12
+
+        # Add features for handling missing hours and gaps
+        df = self._add_gap_features(df)
+
+        return df
+
+    def _add_gap_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Add features to handle missing hours and gaps in time series."""
+        df = df.sort_values(['campaign_name', 'date', 'hour'])
+
+        # Calculate hours since last activity for each campaign
+        df['hours_since_last_spend'] = df.groupby('campaign_name')['spend'].apply(
+            lambda x: x.shift(1).isna().astype(int).cumsum() * (x != x.shift(1)).astype(int)
+        ).fillna(0)
+
+        # More sophisticated gap tracking
+        df['is_missing_hour'] = 0  # Will be set to 1 for filled missing hours
+
+        # Add campaign-level gap statistics
+        df['campaign_spend_volatility'] = df.groupby('campaign_name')['spend'].transform('std')
+        df['campaign_hourly_frequency'] = df.groupby(['campaign_name', df['date'].dt.date])['hour'].transform('nunique')
+
         return df
 
     def create_campaign_clusters(self, df: pd.DataFrame) -> pd.DataFrame:

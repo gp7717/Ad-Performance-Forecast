@@ -406,7 +406,7 @@ class MetaInsightsFetcher:
         ad_account_id = ad_account_id or os.getenv("AD_ACCOUNT_ID", "act_1685189008684458")
         access_token = "EAAJ1b4rDAIQBO4WmTAhBdhLyTCZCfBVvOr2iAbYMLVWpIKfZAP2bWVp49ucZBzlRTpud5ZCRZB7Ae6pcEleUrZCgfER9enRiPQdCFcGW6TRHXtfcfNO5IVFBZCOj1HDZBaIp8EFJL2ZAZCABXYVrV5Qg7lWZAjuVuMfFX1uZBfPUPATvJ0OwY5w7tcoXqmK6LNwZBtQZDZD"
         since = "2025-10-01"
-        until = "2025-10-16"
+        until = "2025-10-20"
         output_path = output_path or config.get("data.raw_dir", "data/raw") + "/meta_insights_hourly_dataset.csv"
 
         if not access_token or access_token.startswith("<PUT_"):

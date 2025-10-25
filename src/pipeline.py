@@ -3,6 +3,7 @@ End-to-end pipeline for ad performance forecasting
 """
 import logging
 import argparse
+import numpy as np
 from pathlib import Path
 from typing import Dict, Any
 
@@ -266,7 +267,17 @@ def run_pipeline(args=None):
         if key == 'predictions':
             print(f"{key.title()}:")
             for campaign, pred in value.items():
-                print(f"  {campaign}: ${pred:.2f}")
+                if isinstance(pred, (list, tuple, np.ndarray)):
+                    # Handle hourly predictions (new format)
+                    total_spend = sum(pred)
+                    avg_spend = total_spend / len(pred)
+                    print(f"  {campaign}:")
+                    print(f"    Total 12h: ${total_spend:.2f}")
+                    print(f"    Average hourly: ${avg_spend:.2f}")
+                    print(f"    Hourly breakdown: {', '.join([f'${p:.2f}' for p in pred])}")
+                else:
+                    # Handle legacy format (single value)
+                    print(f"  {campaign}: ${pred:.2f}")
         elif key == 'training_metrics':
             print(f"{key.title()}:")
             for metric, val in value.items():

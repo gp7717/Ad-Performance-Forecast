@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Dict, Any, Tuple
 
 from config import config
+from .evaluate import symmetric_mean_absolute_percentage_error, weighted_mean_absolute_percentage_error
 
 
 class LGBMTrainer:
@@ -138,14 +139,18 @@ class LGBMTrainer:
         metrics['test_rmse'] = np.sqrt(mean_squared_error(y_test, y_test_pred))
         metrics['test_r2'] = r2_score(y_test, y_test_pred)
 
-        # MAPE (Mean Absolute Percentage Error)
-        metrics['train_mape'] = np.mean(np.abs((y_train - y_train_pred) / (y_train + 1e-6))) * 100
-        metrics['test_mape'] = np.mean(np.abs((y_test - y_test_pred) / (y_test + 1e-6))) * 100
+        # Better metrics for zero-inflated data (remove MAPE)
+        metrics.update({
+            'train_smape': symmetric_mean_absolute_percentage_error(y_train, y_train_pred),
+            'test_smape': symmetric_mean_absolute_percentage_error(y_test, y_test_pred),
+            'train_wmape': weighted_mean_absolute_percentage_error(y_train, y_train_pred),
+            'test_wmape': weighted_mean_absolute_percentage_error(y_test, y_test_pred),
+        })
 
-        # Log metrics
+        # Log metrics (removed MAPE)
         self.logger.info("Model Performance Metrics:")
-        self.logger.info(f"Train - MAE: {metrics['train_mae']:.4f}, RMSE: {metrics['train_rmse']:.4f}, R²: {metrics['train_r2']:.4f}, MAPE: {metrics['train_mape']:.2f}%")
-        self.logger.info(f"Test  - MAE: {metrics['test_mae']:.4f}, RMSE: {metrics['test_rmse']:.4f}, R²: {metrics['test_r2']:.4f}, MAPE: {metrics['test_mape']:.2f}%")
+        self.logger.info(f"Train - MAE: {metrics['train_mae']:.4f}, RMSE: {metrics['train_rmse']:.4f}, R²: {metrics['train_r2']:.4f}, sMAPE: {metrics['train_smape']:.2f}%, wMAPE: {metrics['train_wmape']:.2f}%")
+        self.logger.info(f"Test  - MAE: {metrics['test_mae']:.4f}, RMSE: {metrics['test_rmse']:.4f}, R²: {metrics['test_r2']:.4f}, sMAPE: {metrics['test_smape']:.2f}%, wMAPE: {metrics['test_wmape']:.2f}%")
 
         return metrics
 

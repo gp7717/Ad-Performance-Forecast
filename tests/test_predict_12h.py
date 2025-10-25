@@ -101,6 +101,7 @@ class TestSpendPredictor:
 
         # Create a mock model that returns predictions
         def mock_predict(X):
+            # Return total 12-hour predictions (single values)
             return np.full(len(X), 75.0)  # Constant prediction for simplicity
 
         mock_model = type('MockModel', (), {
@@ -110,16 +111,30 @@ class TestSpendPredictor:
 
         predictor.model = mock_model
 
+        # Test the old format (single value predictions)
         predictions = predictor.predict_next_12h(sample_prediction_data)
 
         # Check that we get predictions for each campaign
         assert isinstance(predictions, dict)
         assert len(predictions) > 0
 
-        # Check that all predictions are reasonable
+        # Check that all predictions are reasonable (old format)
         for campaign, pred in predictions.items():
             assert isinstance(pred, (int, float))
             assert pred >= 0  # Spend should be non-negative
+
+        # Test the new hourly format
+        hourly_predictions = predictor.predict_hourly_spend(sample_prediction_data)
+
+        # Check that we get hourly predictions for each campaign
+        assert isinstance(hourly_predictions, dict)
+        assert len(hourly_predictions) > 0
+
+        # Check that all hourly predictions are reasonable
+        for campaign, pred in hourly_predictions.items():
+            assert isinstance(pred, list)
+            assert len(pred) == 12  # Should have 12 hourly predictions
+            assert all(p >= 0 for p in pred)  # All hourly spends should be non-negative
 
     def test_save_predictions(self, sample_prediction_data):
         """Test prediction saving."""
@@ -142,8 +157,43 @@ class TestSpendPredictor:
 
             # Check that we can read the saved predictions
             saved_df = pd.read_csv(output_path)
-            assert 'campaign_name' in saved_df.columns
-            assert 'predicted_spend_12h' in saved_df.columns
+            # For hourly format, check for 'Campaign' column and hourly columns
+            assert 'Campaign' in saved_df.columns
+
+        finally:
+            if os.path.exists(output_path):
+                os.unlink(output_path)
+
+    def test_save_hourly_predictions(self, sample_prediction_data):
+        """Test hourly prediction saving."""
+        predictor = SpendPredictor()
+
+        # Create mock hourly predictions
+        mock_hourly_predictions = {
+            'Campaign_A': [10.0, 11.0, 12.0, 9.0, 8.0, 7.0, 6.0, 8.0, 10.0, 12.0, 11.0, 10.0],
+            'Campaign_B': [15.0, 16.0, 17.0, 14.0, 13.0, 12.0, 11.0, 13.0, 15.0, 17.0, 16.0, 15.0],
+        }
+
+        with tempfile.NamedTemporaryFile(suffix='_hourly.csv', delete=False) as tmp_file:
+            output_path = tmp_file.name
+
+        try:
+            hourly_df = predictor.save_hourly_predictions(mock_hourly_predictions, output_path)
+
+            # Check that file was created
+            assert os.path.exists(output_path)
+
+            # Check that we can read the saved predictions
+            saved_df = pd.read_csv(output_path)
+            assert 'Campaign' in saved_df.columns
+
+            # Check that we have the right campaigns
+            assert 'Campaign_A' in saved_df['Campaign'].values
+            assert 'Campaign_B' in saved_df['Campaign'].values
+
+            # Check that we have hourly columns (should have 12 hour columns)
+            hour_columns = [col for col in saved_df.columns if col != 'Campaign']
+            assert len(hour_columns) == 12
 
         finally:
             if os.path.exists(output_path):

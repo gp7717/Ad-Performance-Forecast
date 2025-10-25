@@ -2,30 +2,36 @@
 # Model Evaluation Report
 
 ## Overall Performance
-- **MAE**: 97.0813
-- **RMSE**: 126.3577
-- **R²**: 0.1487
-- **MAPE**: 9473317496888829952.00%
+- **MAE**: 105.8792
+- **RMSE**: 138.2320
+- **R²**: 0.0754
+- **sMAPE**: 93.38%
+- **wMAPE**: 57.63%
+
+## Zero-Inflation Analysis
+- **Zero Actuals**: 176 (19.9%)
+- **Zero Predictions**: 0 (0.0%)
+- **Model Bias**: Under-predicting zeros
 
 ## Residual Analysis
-- **Mean Residual**: -4.4651
-- **Residual Std**: 126.3371
-- **Residual Skewness**: 1.5069
-- **Residual Kurtosis**: 4.2648
+- **Mean Residual**: -5.3615
+- **Residual Std**: 138.2060
+- **Residual Skewness**: 1.7274
+- **Residual Kurtosis**: 6.3960
 
 ## Dataset Info
-- **Number of Samples**: 1083
-- **Mean Target Value**: 131.9213
-- **Target Std Dev**: 137.0129
+- **Number of Samples**: 886
+- **Mean Target Value**: 138.2643
+- **Target Std Dev**: 143.8356
 
 ## Top 10 Most Important Features
- 1. spend_expanding_sum            281.000000
- 2. spend_mean                     264.000000
- 3. impressions_expanding_sum      246.000000
- 4. spend_rolling_std_7d           228.000000
- 5. hour_cos                       196.000000
- 6. day_of_month                   172.000000
- 7. clicks_expanding_sum           161.000000
- 8. spend_rolling_mean_7d          145.000000
- 9. ctr_rolling_std_7d             143.000000
-10. hour                           142.000000
+ 1. spend_mean                     155.000000
+ 2. hour_cos                       133.000000
+ 3. day_of_month                   129.000000
+ 4. impressions_expanding_sum      114.000000
+ 5. spend_lag_24h                  101.000000
+ 6. clicks_expanding_sum           99.000000
+ 7. ctr_rolling_std_7d             98.000000
+ 8. dayofweek_spend                96.000000
+ 9. clicks_rolling_std_7d          94.000000
+10. spend_expanding_sum            90.000000
